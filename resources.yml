@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loco-test-deployment
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: loco-test
+  template:
+    metadata:
+      labels:
+        app: loco-test
+    spec:
+      containers:
+      - name: loco-test
+        image: tilakraj1998/loco-test
+        ports:
+          - containerPort: 8000  
+        resources:
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
+      imagePullSecrets:
+      - name: my-secret
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: loco-test-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: loco-test-deployment
+  minReplicas: 3  
+  maxReplicas: 10 
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loco-test-service
+spec:
+  selector:
+    app: loco-test
+  ports:
+    - protocol: TCP
+      port: 8000         
+      targetPort: 8000   
+  type: LoadBalancer  
